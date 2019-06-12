@@ -33,7 +33,7 @@ class ModuleDescription implements ModuleDescriptionInterface, ComponentInterfac
 	 * Returns module name
 	 * @return string
 	 */
-	lambda string getName() => "Core.Components.Tree";
+	lambda string getModuleName() => "Core.Components.Tree";
 	
 	
 	
@@ -126,22 +126,10 @@ class ModuleDescription implements ModuleDescriptionInterface, ComponentInterfac
 	
 	
 	/**
-	 * Init context
-	 * @param ContextInterface context
-	 */
-	public static void initContext(ContextInterface context)
-	{
-	}
-	
-	
-	
-	/**
 	 * Called then module registed in context
 	 * @param ContextInterface context
 	 */
-	public static void onRegister(ContextInterface context)
-	{
-	}
+	public static void onRegister(ContextInterface context){}
 	
 	
 	
@@ -150,5 +138,14 @@ class ModuleDescription implements ModuleDescriptionInterface, ComponentInterfac
 	 * @param Map<mixed> config
 	 */
 	public static void onReadConfig(ContextInterface context, Map<mixed> config){}
+	
+	
+	
+	/**
+	 * Init context
+	 * @param ContextInterface context
+	 */
+	public static void onInitContext(ContextInterface context){}
+	
 	
 }

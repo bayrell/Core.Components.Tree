@@ -32,28 +32,6 @@ use Core.Components.Tree.TreeModel;
 class Tree extends CoreView
 {
 	
-	/**
-	 * Required Assets
-	 */
-	lambda Collection<string> assets() =>
-		[
-			classof TreeAssets,
-		]
-	;
-	
-	
-	
-	/**
-	 * Required components
-	 */
-	lambda Collection<string> components() =>
-		[
-			classof ContextMenu,
-			classof Dialog,
-		]
-	;
-	
-	
 	
 	/**
 	 * Component css
@@ -61,7 +39,7 @@ class Tree extends CoreView
 	lambda string css(Dict<string> vars) => 
 		@css{
 			%tree_item > %tree_items{
-				padding-left: 10px;
+				padding-left: 15px;
 			}
 			%tree_icon, %tree_label{
 				display: inline-block;
@@ -74,7 +52,8 @@ class Tree extends CoreView
 			%tree_icon{
 				width: 22px;
 				height: 22px;
-				font-size: 20px;
+				font-size: 16px;
+				text-align: center;
 			}
 			%tree_label{
 				cursor: pointer;

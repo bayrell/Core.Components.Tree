@@ -160,32 +160,13 @@ class TreeManager extends CoreManager
 	
 	
 	
-	@Event{ 
-		"event": classof MouseClickEvent, 
-		"method_name": "onTreeItemLabelClick", 
-		"preventDefault": true, 
-	}
-	@Event{ 
-		"event": classof MouseContextMenuEvent, 
-		"method_name": "onTreeItemLabelContextMenu", 
-		"cancel": true, 
-	}
-	@Event{ 
-		"event": classof MouseDoubleClickEvent, 
-		"method_name": "onTreeItemLabelDoubleClick", 
-		"preventDefault": true, 
-	}
-	public assignable UIController tree_item_label = new UIController();
-	
-	
-	
 	/**
 	 * Event item click
 	 */
-	public void onTreeItemLabelClick(MouseClickEvent event)
+	public void onTreeItemLabelClick(UIEvent<MouseClickEvent> e)
 	{
 		/* Set new value */
-		string tree_data_path = event.ui.props.get("data-path");
+		string tree_data_path = e.event.ui.props.get("data-path");
 		
 		Collection<int> path = TreeModel::splitPath( tree_data_path );
 		this.signalOut( new TreeSelectNodeEvent{ "path": path } );
@@ -200,14 +181,14 @@ class TreeManager extends CoreManager
 	/**
 	 * Event item click
 	 */
-	public void onTreeItemLabelContextMenu(MouseContextMenuEvent event)
+	public void onTreeItemLabelContextMenu(UIEvent<MouseContextMenuEvent> e)
 	{
 		/* Set new value */
-		string tree_data_path = event.ui.props.get("data-path");
+		string tree_data_path = e.event.ui.props.get("data-path");
 		
 		Model model = this.model;
 		
-		model = TreeModel::showContextMenu(model, true, event.pageX - window.scrollX, event.pageY - window.scrollY);
+		model = TreeModel::showContextMenu(model, true, e.event.pageX - window.scrollX, e.event.pageY - window.scrollY);
 		model = TreeModel::selectItem(model, tree_data_path);
 		
 		this.setModel(model);
@@ -218,9 +199,9 @@ class TreeManager extends CoreManager
 	/**
 	 * Event item double click
 	 */
-	public void onTreeItemLabelDoubleClick(MouseClickEvent event)
+	public void onTreeItemLabelDoubleClick(UIEvent<MouseClickEvent> e)
 	{
-		string tree_data_path = event.ui.props.get("data-path");
+		string tree_data_path = e.event.ui.props.get("data-path");
 		Collection<int> path = TreeModel::splitPath( tree_data_path );
 		this.signalOut( new TreeReloadNodeEvent{ "path": path } );
 		
@@ -231,19 +212,10 @@ class TreeManager extends CoreManager
 	
 	
 	
-	@BindModel{ "model": "dialog" }
-	@Event{ 
-		"event": classof DialogResultEvent, 
-		"method_name": "onDialogResult", 
-	}
-	public assignable UIController dialog = new UIController();
-	
-	
-	
 	/**
 	 * Dialog create result
 	 */
-	public void onDialogResult(DialogResultEvent result)
+	public void onDialogResult(UIEvent<DialogResultEvent> result)
 	{
 		if (result.value == DialogModel::BUTTON_RESULT_OK)
 		{
@@ -321,19 +293,10 @@ class TreeManager extends CoreManager
 	
 	
 	
-	@Event{ 
-		"event": classof ContextMenuItemClickEvent, 
-		"method_name": "onContextMenuClick", 
-		"cancel": true 
-	}
-	public assignable UIController contextmenu = new UIController();
-	
-	
-	
 	/**
 	 * Navigation menu item click
 	 */
-	public void onContextMenuClick(ContextMenuItemClickEvent e)
+	public void onContextMenuClick(UIEvent<ContextMenuItemClickEvent> e)
 	{
 		
 		/* Hide context menu */
@@ -343,28 +306,29 @@ class TreeManager extends CoreManager
 		
 		
 		Collection<int> path = TreeModel::splitPath( this.model.selected );
-		if (e.tag == 'create_file')
+		if (e.event.tag == 'create_file')
 		{
 			static::showCreateFile(path);
 		}
-		else if (e.tag == 'create_folder')
+		else if (e.event.tag == 'create_folder')
 		{
 			static::showCreateFolder(path);
 		}
-		else if (e.tag == 'rename_node')
+		else if (e.event.tag == 'rename_node')
 		{
 			static::showRenameNode(path);
 		}
-		else if (e.tag == 'delete_node')
+		else if (e.event.tag == 'delete_node')
 		{
 			static::showDeleteNode(path);
 		}
-		else if (e.tag == 'reload_node')
+		else if (e.event.tag == 'reload_node')
 		{
 			/* Call await method */
 			callback f = rtl::methodAwait(this, "reloadNode");
 			f(path);
 		}
+		
 	}
 	
 	

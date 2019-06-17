@@ -19,14 +19,23 @@
 namespace Core.Components.Tree;
 
 use Runtime.RuntimeUtils;
-use Core.UI.Render.CoreView;
-use Core.UI.Render.RenderHelper;
+use Core.Components.ContextMenu.ContextMenuItemClickEvent;
 use Core.Components.ContextMenu.ContextMenu;
+use Core.Components.Dialog.DialogResultEvent;
 use Core.Components.Dialog.Dialog;
 use Core.Components.Tree.TreeAssets;
 use Core.Components.Tree.TreeItem;
 use Core.Components.Tree.TreeManager;
 use Core.Components.Tree.TreeModel;
+use Core.UI.Annotations.BindModel;
+use Core.UI.Annotations.BindValue;
+use Core.UI.Annotations.Event;
+use Core.UI.Annotations.EventAsync;
+use Core.UI.Events.MouseEvent.MouseClickEvent;
+use Core.UI.Events.MouseEvent.MouseContextMenuEvent;
+use Core.UI.Events.MouseEvent.MouseDoubleClickEvent;
+use Core.UI.Render.CoreView;
+use Core.UI.Render.RenderHelper;
 
 
 class Tree extends CoreView
@@ -128,6 +137,27 @@ class Tree extends CoreView
 	
 	
 	
+	lambda Collection<CoreStruct> treeItemLabel() =>
+		[
+			new Event{ 
+				"event": classof MouseClickEvent, 
+				"method_name": "onTreeItemLabelClick", 
+				"preventDefault": true, 
+			}
+			new Event{ 
+				"event": classof MouseContextMenuEvent, 
+				"method_name": "onTreeItemLabelContextMenu", 
+				"cancel": true, 
+			}
+			new Event{ 
+				"event": classof MouseDoubleClickEvent, 
+				"method_name": "onTreeItemLabelDoubleClick", 
+				"preventDefault": true, 
+			}
+		]
+	;
+	
+	
 	/**
 	 * Tree render item
 	 */
@@ -142,7 +172,8 @@ class Tree extends CoreView
 			<div @class='tree_item' class={ class_name }>
 				<div @class='tree_item_name'>
 					<div @class='tree_icon'>{ static::renderTreeIcon(model, item, props) }</div>
-					<div @class='tree_label' data-path={ path } @control="tree_item_label">{ item.name }</div>
+					<div @class='tree_label' data-path={ path } 
+						@annotations={ static::treeItemLabel() }>{ item.name }</div>
 				</div>
 				<div @class='tree_items'>
 					{ item.is_open ? static::renderTreeItems(model, item.items, path, props) : "" }
@@ -183,7 +214,16 @@ class Tree extends CoreView
 	 * Render context menu
 	 */
 	lambda Collection<UIStruct> renderContextMenu(Model model) =>
-		<ContextMenu @model={ model.contextmenu } @key="contextmenu" @control="contextmenu">
+		<ContextMenu @key="contextmenu" 
+			@model={ model.contextmenu } 
+			@annotations=[
+				new Event{ 
+					"event": classof ContextMenuItemClickEvent, 
+					"method_name": "onContextMenuClick", 
+					"cancel": true 
+				}
+			]
+		>
 			{ static::renderContextMenuItems(model) }
 		</ContextMenu>	
 	;
@@ -226,7 +266,14 @@ class Tree extends CoreView
 	lambda Collection<UIStruct> renderDialogs(Model model)
 	{
 		return 
-			<Dialog @model={ model.dialog } @control='dialog'></Dialog>
+			<Dialog @model={ model.dialog } @bind="dialog"
+				@annotations=[
+					new Event{ 
+						"event": classof DialogResultEvent, 
+						"method_name": "onDialogResult", 
+					}
+				]
+			></Dialog>
 		;
 	};
 	

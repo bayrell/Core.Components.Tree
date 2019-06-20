@@ -67,10 +67,9 @@ class ModuleDescription implements ModuleDescriptionInterface, ComponentInterfac
 		"Core.Components.Tree.Tree",
 		"Core.Components.Tree.TreeDialogModel",
 		"Core.Components.Tree.TreeItem",
+		"Core.Components.Tree.TreeItemEvent",
 		"Core.Components.Tree.TreeManager",
 		"Core.Components.Tree.TreeModel",
-		"Core.Components.Tree.TreeReloadNodeEvent",
-		"Core.Components.Tree.TreeSelectNodeEvent",
 		"Core.Components.Tree.ModuleDescription",
 	];
 	

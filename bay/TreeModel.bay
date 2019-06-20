@@ -27,12 +27,10 @@ use Core.Components.Tree.TreeItem;
 
 struct TreeModel extends TreeItem
 {
-	
 	public string selected = "";
 	public DialogModel dialog = new TreeDialogModel();
 	public ContextMenuModel contextmenu = new ContextMenuModel();
-	public Collection<TreeItem> items = null;
-	
+	public Collection<TreeItem> items = null;	
 	
 	
 	/**
@@ -47,14 +45,29 @@ struct TreeModel extends TreeItem
 	
 	
 	/**
-	 * Return name path
+	 * Select item
+	 * @param TreeModel model
+	 * @param string path
+	 * @return TreeModel
 	 */
-	lambda Collection<int> getNamePath(TreeModel model, Collection<int> path, string ch = "/", string attr = "name")
+	lambda TreeModel selectItem(TreeModel model, string path)
 	{
-		Collection<TreeItem> items = static::getTreePathItems(model, path);
-		string path_str = rs::implode(ch, items.map( lambda string (TreeItem item) use (attr) => item.takeValue(attr) ));
-		if (path_str == "") return path_str;
-		return ch ~ path_str;
+		model <= selected <= path;
+		return model;
+	}
+	
+	
+	
+	/**
+	 * Show navigator context menu
+	 * @param TreeModel model
+	 * @return TreeItem
+	 */
+	lambda TreeItem getSelectedItem(TreeModel model)
+	{
+		Collection<int> path = static::splitPath( model.selected );
+		TreeItem item = static::getTreeItem( model, path );
+		return item;
 	}
 	
 	
@@ -75,6 +88,19 @@ struct TreeModel extends TreeItem
 		}
 		
 		return items.toCollection();
+	}
+	
+	
+	
+	/**
+	 * Return name path
+	 */
+	lambda Collection<int> getNamePath(TreeModel model, Collection<int> path, string ch = "/", string attr = "name")
+	{
+		Collection<TreeItem> items = static::getTreePathItems(model, path);
+		string path_str = rs::implode(ch, items.map( lambda string (TreeItem item) use (attr) => item.takeValue(attr) ));
+		if (path_str == "") return path_str;
+		return ch ~ path_str;
 	}
 	
 	
@@ -166,7 +192,7 @@ struct TreeModel extends TreeItem
 	
 	
 	/**
-	 * Add tree item by path
+	 * Delete tree item by path
 	 */
 	lambda TreeItem deleteTreeItem(TreeItem parent_item, Collection<int> path)
 	{
@@ -185,67 +211,6 @@ struct TreeModel extends TreeItem
 			)
 		);
 		return parent_item;
-	}
-	
-	
-	
-	/**
-	 * Show navigator context menu
-	 * @param TreeModel model
-	 * @param bool is_active
-	 * @param int x
-	 * @param int y
-	 * @return TreeModel
-	 */
-	lambda TreeModel showContextMenu(TreeModel model, bool is_active, int x = 0, int y = 0)
-	{
-		ContextMenuModel contextmenu = model.contextmenu;
-		
-		if (is_active)
-		{
-			contextmenu = contextmenu.copy({
-				"is_active": is_active,
-				"x": x,
-				"y": y,
-			});
-		}
-		else
-		{
-			contextmenu = contextmenu.copy({
-				"is_active": is_active,
-			});
-		}
-		
-		model <= contextmenu <= contextmenu;
-		return model;
-	}
-	
-	
-	
-	/**
-	 * Show navigator context menu
-	 * @param TreeModel model
-	 * @param string path
-	 * @return TreeModel
-	 */
-	lambda TreeModel selectItem(TreeModel model, string path)
-	{
-		model <= selected <= path;
-		return model;
-	}
-	
-	
-	
-	/**
-	 * Show navigator context menu
-	 * @param TreeModel model
-	 * @return TreeItem
-	 */
-	lambda TreeItem getSelectedItem(TreeModel model)
-	{
-		Collection<int> path = static::splitPath( model.selected );
-		TreeItem item = static::getTreeItem( model, path );
-		return item;
 	}
 	
 }

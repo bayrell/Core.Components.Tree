@@ -19,10 +19,20 @@
 namespace Core.Components.Tree;
 
 use Runtime.CoreEvent;
+use Core.Components.Tree.TreeItem;
 
 
-struct TreeSelectNodeEvent extends CoreEvent
+struct TreeItemEvent extends CoreEvent
 {
+	const string CREATE = "create";
+	const string OPEN = "open";
+	const string RENAME = "rename";
+	const string DELETE = "delete";
+	
+	
+	public string kind = "";
 	public Collection<int> path = null;
+	public TreeItem item = null;
+	public TreeItem item_old = null;
+	public TreeItem item_new = null;
 }
-

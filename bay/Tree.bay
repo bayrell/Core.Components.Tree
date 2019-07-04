@@ -19,6 +19,10 @@
 namespace Core.Components.Tree;
 
 use Runtime.RuntimeUtils;
+use Core.Annotations.BindModel;
+use Core.Annotations.BindValue;
+use Core.Annotations.Event;
+use Core.Annotations.EventAsync;
 use Core.Components.ContextMenu.ContextMenuItemClickEvent;
 use Core.Components.ContextMenu.ContextMenu;
 use Core.Components.Dialog.DialogResultEvent;
@@ -27,15 +31,11 @@ use Core.Components.Tree.TreeAssets;
 use Core.Components.Tree.TreeItem;
 use Core.Components.Tree.TreeManager;
 use Core.Components.Tree.TreeModel;
-use Core.UI.Annotations.BindModel;
-use Core.UI.Annotations.BindValue;
-use Core.UI.Annotations.Event;
-use Core.UI.Annotations.EventAsync;
 use Core.UI.Events.MouseEvent.MouseClickEvent;
 use Core.UI.Events.MouseEvent.MouseContextMenuEvent;
 use Core.UI.Events.MouseEvent.MouseDoubleClickEvent;
-use Core.UI.Render.CoreView;
-use Core.UI.Render.RenderHelper;
+use Core.UI.CoreView;
+use Core.UI.RenderHelper;
 
 
 class Tree extends CoreView
@@ -214,8 +214,8 @@ class Tree extends CoreView
 	 * Render context menu
 	 */
 	lambda Collection<UIStruct> renderContextMenu(Model model) =>
-		<ContextMenu @key="contextmenu" 
-			@model={ model.contextmenu } 
+		<ContextMenu @key="contextmenu" @ref="ref_contextmenu" @bind="contextmenu"
+			@model={ model.contextmenu }
 			@annotations=[
 				new Event{ 
 					"event": classof ContextMenuItemClickEvent, 
@@ -241,19 +241,19 @@ class Tree extends CoreView
 		TreeModel item = TreeModel::getSelectedItem(model);
 		if (item.kind == TreeModel::KIND_FOLDER)
 		{
-			return 
-				<ContextMenuItem icon='fa fa-file' @tag='create_file'>Create file</ContextMenuItem>
-				<ContextMenuItem icon='fa fa-folder' @tag='create_folder'>Create folder</ContextMenuItem>
-				<ContextMenuItem icon='fa fa-pencil' @tag='rename_node'>Rename</ContextMenuItem>
-				<ContextMenuItem icon='fa fa-trash' @tag='delete_node'>Delete</ContextMenuItem>
-				<ContextMenuItem icon='fa fa-refresh' @tag='reload_node'>Reload</ContextMenuItem>
+			return
+				<ContextMenuItem icon='fa fa-file' @tag='action_create_file'>Create file</ContextMenuItem>
+				<ContextMenuItem icon='fa fa-folder' @tag='action_create_folder'>Create folder</ContextMenuItem>
+				<ContextMenuItem icon='fa fa-pencil' @tag='action_rename_item'>Rename</ContextMenuItem>
+				<ContextMenuItem icon='fa fa-trash' @tag='action_delete_item'>Delete</ContextMenuItem>
+				<ContextMenuItem icon='fa fa-refresh' @tag='action_reload_item'>Reload</ContextMenuItem>
 			;
 		}
 		else
 		{
-			return 
-				<ContextMenuItem icon='fa fa-pencil' @tag='rename_node'>Rename</ContextMenuItem>
-				<ContextMenuItem icon='fa fa-trash' @tag='delete_node'>Delete</ContextMenuItem>
+			return
+				<ContextMenuItem icon='fa fa-pencil' @tag='action_rename_item'>Rename</ContextMenuItem>
+				<ContextMenuItem icon='fa fa-trash' @tag='action_delete_item'>Delete</ContextMenuItem>
 			;
 		}
 	}
@@ -266,7 +266,7 @@ class Tree extends CoreView
 	lambda Collection<UIStruct> renderDialogs(Model model)
 	{
 		return 
-			<Dialog @model={ model.dialog } @bind="dialog"
+			<Dialog @model={ model.dialog } @bind="dialog" @ref="ref_dialog"
 				@annotations=[
 					new Event{ 
 						"event": classof DialogResultEvent, 

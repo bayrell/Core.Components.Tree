@@ -21,14 +21,19 @@ namespace Core.Components.Tree;
 use Runtime.CoreStruct;
 use Core.Components.Dialog.DialogModel;
 use Core.Components.ContextMenu.ContextMenuModel;
-use Core.Components.Tree.TreeDialogModel;
 use Core.Components.Tree.TreeItem;
 
 
 struct TreeModel extends TreeItem
 {
+	const string DIALOG_CREATE_FILE = "dialog_create_file";
+	const string DIALOG_CREATE_FOLDER = "dialog_create_folder";
+	const string DIALOG_RENAME_ITEM = "dialog_rename_item";
+	const string DIALOG_DELETE_ITEM = "dialog_delete_item";
+	const string DIALOG_RELOAD_ITEM = "dialog_reload_item";
+	
 	public string selected = "";
-	public DialogModel dialog = new TreeDialogModel();
+	public DialogModel dialog = new DialogModel();
 	public ContextMenuModel contextmenu = new ContextMenuModel();
 	public Collection<TreeItem> items = null;	
 	
@@ -75,9 +80,8 @@ struct TreeModel extends TreeItem
 	/**
 	 * Returns tree items by path
 	 */
-	lambda Collection<TreeItem> getTreePathItems(TreeModel model, Collection<int> path)
+	lambda Collection<TreeItem> getTreePathItems(TreeItem item, Collection<int> path)
 	{
-		TreeItem item = model;
 		Vector<TreeItem> items = new Vector();
 		for (int i=0; i<path.count(); i++)
 		{
@@ -86,7 +90,6 @@ struct TreeModel extends TreeItem
 			if (item == null) return null;
 			items.push(item);
 		}
-		
 		return items.toCollection();
 	}
 	
@@ -95,11 +98,11 @@ struct TreeModel extends TreeItem
 	/**
 	 * Return name path
 	 */
-	lambda Collection<int> getNamePath(TreeModel model, Collection<int> path, string ch = "/", string attr = "name")
+	lambda Collection<int> getNamePath(TreeItem model, Collection<int> path, string ch = "/", string attr = "name")
 	{
 		Collection<TreeItem> items = static::getTreePathItems(model, path);
-		string path_str = rs::implode(ch, items.map( lambda string (TreeItem item) use (attr) => item.takeValue(attr) ));
-		if (path_str == "") return path_str;
+		string path_str = rs::join(ch, items.map( lambda string (TreeItem item) use (attr) => item.takeValue(attr) ));
+		if (path_str == "") return ch;
 		return ch ~ path_str;
 	}
 	
@@ -126,24 +129,24 @@ struct TreeModel extends TreeItem
 	/**
 	 * Set tree item by path
 	 */
-	lambda TreeItem setTreeItem(TreeItem parent_item, Collection<int> path, TreeItem item)
+	lambda TreeItem setTreeItem(TreeItem model, Collection<int> path, TreeItem item)
 	{
 		if (path.count() == 1)
 		{
-			parent_item <= items <= parent_item.items.setIm(path.get(0), item);
-			return parent_item;
+			model <= items <= model.items.setIm(path.get(0), item);
+			return model;
 		}
 		
 		int key = path.get(0);
-		parent_item <= items <= parent_item.items.setIm(
+		model <= items <= model.items.setIm(
 			key, 
 			static::setTreeItem(
-				parent_item.items.get(key), 
+				model.items.get(key), 
 				path.removeFirstIm(), 
 				item
 			)
 		);
-		return parent_item;
+		return model;
 	}
 	
 	
@@ -151,42 +154,42 @@ struct TreeModel extends TreeItem
 	/**
 	 * Add tree item by path
 	 */
-	lambda TreeItem addTreeItem(TreeItem parent_item, Collection<int> path, TreeItem item, callback add_item = null)
+	lambda TreeItem addTreeItem(TreeItem model, Collection<int> path, TreeItem item, callback add_item = null)
 	{
 		if (path.count() == 0)
 		{
-			if (parent_item.items != null)
+			if (model.items != null)
 			{
 				Collection<TreeItem> items = null;
 				if (add_item)
 				{
-					items = add_item(parent_item.items, item);
+					items = add_item(model.items, item);
 				}
 				else
 				{
-					items = parent_item.items.pushIm(item);
+					items = model.items.pushIm(item);
 				}
-				parent_item <= items <= parent_item.items.pushIm(item);
+				model <= items <= model.items.pushIm(item);
 			}
 			else
 			{
 				Collection items = [ item ];
-				parent_item <= items <= items.toCollection();
+				model <= items <= items.toCollection();
 			}
-			return parent_item;
+			return model;
 		}
 		
 		int key = path.get(0);
-		parent_item <= items <= parent_item.items.setIm(
+		model <= items <= model.items.setIm(
 			key, 
 			static::addTreeItem(
-				parent_item.items.get(key), 
+				model.items.get(key), 
 				path.removeFirstIm(), 
 				item,
 				add_item
 			)
 		);
-		return parent_item;
+		return model;
 	}
 	
 	
@@ -194,23 +197,37 @@ struct TreeModel extends TreeItem
 	/**
 	 * Delete tree item by path
 	 */
-	lambda TreeItem deleteTreeItem(TreeItem parent_item, Collection<int> path)
+	lambda TreeItem deleteTreeItem(TreeItem model, Collection<int> path)
 	{
 		if (path.count() == 1)
 		{
-			parent_item <= items <= parent_item.items.removeIm( path.get(0) );
-			return parent_item;
+			model <= items <= model.items.removeIm( path.get(0) );
+			return model;
 		}
 		
 		int key = path.get(0);
-		parent_item <= items <= parent_item.items.setIm(
+		model <= items <= model.items.setIm(
 			key, 
 			static::deleteTreeItem(
-				parent_item.items.get(key), 
+				model.items.get(key), 
 				path.removeFirstIm()
 			)
 		);
-		return parent_item;
+		return model;
 	}
+	
+	
+	
+	/**
+	 * Set is open
+	 */
+	lambda TreeModel setIsOpen(TreeItem model, Collection<int> path, bool flag = true)
+	{
+		TreeItem item = static::getTreeItem(model, path);
+		item <= is_open <= flag;
+		return static::setTreeItem(model, path, item);
+	}
+	
+	
 	
 }

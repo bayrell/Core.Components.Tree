@@ -65,7 +65,6 @@ class ModuleDescription implements ModuleDescriptionInterface, ComponentInterfac
 	lambda Collection<string> getModuleFiles() => 
 	[
 		"Core.Components.Tree.Tree",
-		"Core.Components.Tree.TreeDialogModel",
 		"Core.Components.Tree.TreeItem",
 		"Core.Components.Tree.TreeItemEvent",
 		"Core.Components.Tree.TreeManager",

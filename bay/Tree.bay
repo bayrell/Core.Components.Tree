@@ -23,23 +23,46 @@ use Core.Annotations.BindModel;
 use Core.Annotations.BindValue;
 use Core.Annotations.Event;
 use Core.Annotations.EventAsync;
-use Core.Components.ContextMenu.ContextMenuItemClickEvent;
 use Core.Components.ContextMenu.ContextMenu;
-use Core.Components.Dialog.DialogResultEvent;
+use Core.Components.ContextMenu.ContextMenuEvent;
+use Core.Components.ContextMenu.ContextMenuModel;
 use Core.Components.Dialog.Dialog;
-use Core.Components.Tree.TreeAssets;
+use Core.Components.Dialog.DialogEvent;
+use Core.Components.Dialog.DialogModel;
+use Core.Components.Tree.TreeEvent;
 use Core.Components.Tree.TreeItem;
-use Core.Components.Tree.TreeManager;
 use Core.Components.Tree.TreeModel;
 use Core.UI.Events.MouseEvent.MouseClickEvent;
 use Core.UI.Events.MouseEvent.MouseContextMenuEvent;
 use Core.UI.Events.MouseEvent.MouseDoubleClickEvent;
-use Core.UI.CoreView;
+use Core.UI.Component;
 use Core.UI.RenderHelper;
 
 
-class Tree extends CoreView
+class Tree extends Component
 {
+
+	public TreeModel model;
+	public Reference ref_contextmenu = null;
+	public Reference ref_dialog = null;
+	
+	
+	/**
+	 * Returns model name
+	 */
+	lambda string modelName() => classof TreeModel;
+	
+	
+	
+	/**
+	 * Returns require components
+	 */
+	lambda Collection<string> components() => 
+	[
+		classof ContextMenu,
+		classof Dialog
+	];
+	
 	
 	
 	/**
@@ -59,6 +82,7 @@ class Tree extends CoreView
 				-ms-user-select: none;
 			}
 			%tree_icon{
+				cursor: pointer;
 				width: 22px;
 				height: 22px;
 				font-size: 16px;
@@ -103,7 +127,7 @@ class Tree extends CoreView
 	lambda Template renderTree(TreeModel model, UIStruct ui) =>
 		
 		<div @class='tree'>
-			{ static::renderTreeItems(model, model.items, "", ui.props) }
+			{ static::renderTreeItems(model, model, "", ui.props) }
 		</div>
 		
 	;
@@ -116,12 +140,18 @@ class Tree extends CoreView
 	lambda Collection<UIStruct> renderTreeItems
 	(
 		TreeModel model, 
-		Collection<TreeItem> items, 
+		TreeItem item, 
 		string path, 
 		Dict<primitive> props
-	) =>
-	
-		(items != null) ? 
+	)
+	{
+		if (item == null) return "";
+		if (item.is_open == false) return "";
+		
+		Collection<TreeItem> items = item.getItems();
+		if (items == null) return "";
+		
+		return 
 			items.map( 
 				lambda Collection<UIStruct> (TreeItem item, int index) use (model, path, props) => 
 					static::renderTreeItem(
@@ -131,29 +161,29 @@ class Tree extends CoreView
 						props
 					)
 			) 
-		: ""
-		
-	;
+		;
+	}
 	
 	
 	
-	lambda Collection<CoreStruct> treeItemLabel() =>
+	lambda Collection<CoreStruct> treeItemLabelAnnotations() =>
 		[
 			new Event{ 
 				"event": classof MouseClickEvent, 
 				"method_name": "onTreeItemLabelClick", 
 				"preventDefault": true, 
-			}
+			},
 			new Event{ 
 				"event": classof MouseContextMenuEvent, 
 				"method_name": "onTreeItemLabelContextMenu", 
 				"cancel": true, 
-			}
+			},
 			new Event{ 
 				"event": classof MouseDoubleClickEvent, 
 				"method_name": "onTreeItemLabelDoubleClick", 
 				"preventDefault": true, 
-			}
+				"cancel": true, 
+			},
 		]
 	;
 	
@@ -163,20 +193,15 @@ class Tree extends CoreView
 	 */
 	lambda Template renderTreeItem(TreeModel model, TreeItem item, string path, Dict<primitive> props)
 	{
-		string class_name = "";
+		if (item == null) return "";
 		
-		if (model.selected === path) class_name ~= "active ";
-		if (item.is_reload) class_name ~= "reload ";
-		
-		return 
-			<div @class='tree_item' class={ class_name }>
-				<div @class='tree_item_name'>
-					<div @class='tree_icon'>{ static::renderTreeIcon(model, item, props) }</div>
-					<div @class='tree_label' data-path={ path } 
-						@annotations={ static::treeItemLabel() }>{ item.name }</div>
+		return
+			<div @class='tree_item' class={ static::getTreeItemClassName(model, item, path) }>
+				<div @class='tree_item_name' data-path={ path } @annotations={ static::treeItemLabelAnnotations() }>
+					<div @class='tree_icon'>{ static::renderTreeItemIcon(model, item, props) }</div>
+					<div @class='tree_label'>{ item.getName() }</div>
 				</div>
-				<div @class='tree_items'>
-					{ item.is_open ? static::renderTreeItems(model, item.items, path, props) : "" }
+				<div @class='tree_items'>{ static::renderTreeItems(model, item, path, props) }
 				</div>
 			</div>
 		;
@@ -185,11 +210,24 @@ class Tree extends CoreView
 	
 	
 	/**
+	 * Returns item class name
+	 */
+	lambda string getTreeItemClassName(TreeModel model, TreeItem item, string path)
+	{
+		string class_name = "";
+		if (model.selected === path) class_name ~= "active ";
+		if (item.is_reload) class_name ~= "reload ";
+		return class_name;
+	}
+	
+	
+	
+	/**
 	 * Tree render icon
 	 */
-	lambda Collection<UIStruct> renderTreeIcon(TreeModel model, TreeItem item, Dict<primitive> props)
+	lambda Collection<UIStruct> renderTreeItemIcon(TreeModel model, TreeItem item, Dict<primitive> props)
 	{
-		return <span class={ static::getTreeIcon(item) }></span>;
+		return <span class={ static::getTreeItemIcon(item) }></span>;
 	}
 	
 	
@@ -197,7 +235,7 @@ class Tree extends CoreView
 	/**
 	 * Returns icon by item
 	 */
-	lambda string getTreeIcon(TreeItem item)
+	lambda string getTreeItemIcon(TreeItem item)
 	{
 		if (item.kind == TreeItem::KIND_FOLDER)
 		{
@@ -218,7 +256,7 @@ class Tree extends CoreView
 			@model={ model.contextmenu }
 			@annotations=[
 				new Event{ 
-					"event": classof ContextMenuItemClickEvent, 
+					"event": classof ContextMenuEvent, 
 					"method_name": "onContextMenuClick", 
 					"cancel": true 
 				}
@@ -244,15 +282,15 @@ class Tree extends CoreView
 			return
 				<ContextMenuItem icon='fa fa-file' @tag='action_create_file'>Create file</ContextMenuItem>
 				<ContextMenuItem icon='fa fa-folder' @tag='action_create_folder'>Create folder</ContextMenuItem>
-				<ContextMenuItem icon='fa fa-pencil' @tag='action_rename_item'>Rename</ContextMenuItem>
+				<ContextMenuItem icon='fa fa-edit' @tag='action_rename_item'>Rename</ContextMenuItem>
 				<ContextMenuItem icon='fa fa-trash' @tag='action_delete_item'>Delete</ContextMenuItem>
-				<ContextMenuItem icon='fa fa-refresh' @tag='action_reload_item'>Reload</ContextMenuItem>
+				<ContextMenuItem icon='fa fa-sync' @tag='action_reload_item'>Reload</ContextMenuItem>
 			;
 		}
 		else
 		{
 			return
-				<ContextMenuItem icon='fa fa-pencil' @tag='action_rename_item'>Rename</ContextMenuItem>
+				<ContextMenuItem icon='fa fa-edit' @tag='action_rename_item'>Rename</ContextMenuItem>
 				<ContextMenuItem icon='fa fa-trash' @tag='action_delete_item'>Delete</ContextMenuItem>
 			;
 		}
@@ -276,5 +314,506 @@ class Tree extends CoreView
 			></Dialog>
 		;
 	};
+	
+	
+	
+	
+	/* ---------------------------------- Events ----------------------------------- */
+	
+	/**
+	 * Create new item
+	 */
+	public TreeItem newItem(Dict map)
+	{
+		return new TreeItem(map);
+	}
+	
+	
+	
+	/**
+	 * Update item by path
+	 */
+	public void updateItem(Collection<int> path, Dict data, Collection<TreeItem> items = null)
+	{
+		NavigatorItem item = TreeModel::getTreeItem(this.model, path);
+		item = item.copy(data);
+		if (items != null) item = item.setItems(items);
+		this.setModel( TreeModel::setTreeItem(this.model, path, item) );
+	}
+	
+	
+	
+	/**
+	 * Select item by path
+	 */
+	public void selectItem(string tree_data_path)
+	{
+		this.updateModel({
+			"selected": tree_data_path,
+		});
+	}
+	
+	
+	
+	/**
+	 * Delete item by path
+	 */
+	public void deleteItem(Collection<int> path)
+	{
+		TreeModel model = TreeModel::deleteTreeItem
+		(
+			this.model,
+			path
+		);
+		this.setModel( model );
+	}
+	
+	
+	/* ---------------------------------- Events ---------------------------------- */
+	
+	
+	/**
+	 * Event item click
+	 */
+	public void onTreeItemLabelClick(UIEvent<MouseClickEvent> e)
+	{
+		string tree_data_path = e.vdom.props.get("data-path");
+		
+		/* Select node */
+		Model model = this.model;
+		model = TreeModel::selectItem(model, tree_data_path);
+		model <= contextmenu <= ContextMenuModel::hide(this.model.contextmenu);
+		this.setModel(model);
+	}
+	
+	
+	
+	/**
+	 * Event item click
+	 */
+	public void onTreeItemLabelContextMenu(UIEvent<MouseContextMenuEvent> e)
+	{
+		string tree_data_path = e.vdom.props.get("data-path");
+		
+		/* Show context menu and select item */
+		this.ref_contextmenu.ref.show(e.event.pageX - window.scrollX, e.event.pageY - window.scrollY);
+		this.selectItem(tree_data_path);
+	}
+	
+	
+	
+	/**
+	 * Event item double click
+	 */
+	public void onTreeItemLabelDoubleClick(UIEvent<MouseClickEvent> e)
+	{
+		string tree_data_path = e.vdom.props.get("data-path");
+		Collection<int> path = TreeModel::splitPath(tree_data_path);
+		this.openItem(path);
+	}
+	
+	
+	
+	
+	/* ---------------------------------- Actions ---------------------------------- */
+	
+	
+	/**
+	 * Navigation menu item click
+	 */
+	public void onContextMenuClick(UIEvent<ContextMenuItemClickEvent> e)
+	{
+		/* Hide context menu */
+		this.updateModel({
+			"contextmenu": ContextMenuModel::hide(this.model.contextmenu),
+		});
+		
+		string tree_data_path = this.model.selected;
+		Collection<int> path = TreeModel::splitPath(tree_data_path);
+		if (e.event.tag == 'action_create_file')
+		{
+			static::showCreateFile(path);
+		}
+		else if (e.event.tag == 'action_create_folder')
+		{
+			static::showCreateFolder(path);
+		}
+		else if (e.event.tag == 'action_rename_item')
+		{
+			static::showRenameItem(path);
+		}
+		else if (e.event.tag == 'action_delete_item')
+		{
+			static::showDeleteItem(path);
+		}
+		else if (e.event.tag == 'action_reload_item')
+		{
+			static::reloadItem(path);
+		}
+		
+	}
+	
+	
+	
+	/**
+	 * Dialog create result
+	 */
+	public void onDialogResult(UIEvent<DialogResultEvent> e)
+	{
+		DialogResultEvent event = e.event;
+		if (event.value == DialogModel::BUTTON_RESULT_OK)
+		{
+			/* Create file or folder */
+			if (
+				event.model.action == TreeModel::DIALOG_CREATE_FILE or
+				event.model.action == TreeModel::DIALOG_CREATE_FOLDER
+			)
+			{
+				static::createDialogItem(event);
+			}
+			
+			/* Rename node */
+			if (event.model.action == TreeModel::DIALOG_RENAME_ITEM)
+			{
+				static::renameDialogItem(event);
+			}
+			
+			/* Remove node */
+			if (event.model.action == TreeModel::DIALOG_DELETE_ITEM)
+			{
+				static::deleteDialogItem(event);
+			}
+			
+			/* Reload node */
+			if (event.model.action == TreeModel::DIALOG_RELOAD_ITEM)
+			{
+				/*static::reloadItem(event);*/
+			}
+		}
+	}
+	
+	
+	
+	/* ---------------------------------- Show dialog ---------------------------------- */
+	
+	
+	/**
+	 * Create new file
+	 */
+	public void showCreateFile(Collection<int> path)
+	{
+		TreeItem item = TreeModel::getTreeItem(this.model, path);
+		string file_path = TreeModel::getNamePath(this.model, path);
+		
+		if (item.kind == TreeItem::KIND_FOLDER)
+		{
+			this.ref_dialog.ref.show
+			({
+				"action": TreeModel::DIALOG_CREATE_FILE,
+				"style": DialogModel::STYLE_PROMT,
+				"is_modal": true,
+				"title": "",
+				"message": "Create file in " ~ file_path,
+				"tag": path,
+			});
+		}
+		else
+		{
+			this.ref_dialog.ref.show
+			({
+				"style": DialogModel::STYLE_ALERT,
+				"is_modal": true,
+				"title": "Warning",
+				"message": "File must be folder",
+				"tag": path,
+			});
+		}
+		
+	}
+	
+	
+	
+	/**
+	 * Show create new folder
+	 */
+	public void showCreateFolder(Collection<int> path)
+	{
+		TreeItem item = TreeModel::getTreeItem(this.model, path);
+		string file_path = TreeModel::getNamePath(this.model, path);
+		
+		if (item.kind == TreeItem::KIND_FOLDER)
+		{
+			this.ref_dialog.ref.show(
+				{
+					"action": TreeModel::DIALOG_CREATE_FOLDER,
+					"style": DialogModel::STYLE_PROMT,
+					"is_modal": true,
+					"title": "",
+					"message": "Create folder in " ~ file_path,
+					"tag": path,
+				}
+			);
+		}
+		else
+		{
+			this.ref_dialog.ref.show(
+				{
+					"style": DialogModel::STYLE_ALERT,
+					"is_modal": true,
+					"title": "Warning",
+					"message": "File must be folder",
+					"tag": path,
+				}
+			);
+		}
+	}
+	
+	
+	
+	/**
+	 * Rename node
+	 */
+	public void showRenameItem(Collection<int> path)
+	{
+		TreeItem item = TreeModel::getTreeItem(this.model, path);
+		string file_path = TreeModel::getNamePath(this.model, path);
+		string mesage = "";
+		
+		if (item == null)
+		{
+			return;
+		}
+		
+		if (item.kind == TreeItem::KIND_FOLDER)
+		{
+			mesage = "Rename folder " ~ file_path;
+		}
+		else if (item.kind == TreeItem::KIND_FILE)
+		{
+			mesage = "Rename file " ~ file_path;
+		}
+		
+		if (mesage)
+		{
+			this.ref_dialog.ref.show(
+				{
+					"action": TreeModel::DIALOG_RENAME_ITEM,
+					"style": DialogModel::STYLE_PROMT,
+					"input": item.getName(),
+					"is_modal": true,
+					"title": "",
+					"message": mesage,
+					"tag": path,
+				}
+			);
+		}
+		
+	}
+	
+	
+	
+	/**
+	 * Show delete node
+	 */
+	public void showDeleteItem(Collection<int> path)
+	{
+		TreeItem item = TreeModel::getTreeItem(this.model, path);
+		string file_path = TreeModel::getNamePath(this.model, path);
+		string mesage = "";
+		
+		if (item == null)
+		{
+			return;
+		}
+		
+		if (item.kind == TreeItem::KIND_FOLDER)
+		{
+			mesage = "Delete folder " ~ file_path ~ "?";
+		}
+		else if (item.kind == TreeItem::KIND_FILE)
+		{
+			mesage = "Delete file " ~ file_path ~ "?";
+		}
+		
+		if (mesage)
+		{
+			this.ref_dialog.ref.show(
+				{
+					"action": TreeModel::DIALOG_DELETE_ITEM,
+					"style": DialogModel::STYLE_CONFIRM,
+					"is_modal": true,
+					"title": "",
+					"message": mesage,
+					"tag": path,
+				}
+			);
+		}
+		
+	}
+	
+	
+	
+	/* ---------------------------------- Reload Item ---------------------------------- */
+	
+	
+	/**
+	 * Reload item
+	 */
+	void reloadItem(Collection<int> path)
+	{
+	}
+	
+	
+	
+	/* ---------------------------------- Open Item ---------------------------------- */
+	
+	
+	
+	/**
+	 * Open item
+	 */
+	void openItem(Collection<int> path)
+	{
+		TreeItem item = TreeModel::getTreeItem(this.model, path);
+		
+		if (item.kind == TreeItem::KIND_FOLDER)
+		{
+			/* Update model */
+			this.updateItem(
+				path,
+				{
+					"is_open": not item.is_open,
+					"is_reload": false,
+				}
+			);
+			
+			/* Signal Out */
+			this.signalOut( new TreeEvent{ "kind": TreeEvent::ITEM_OPEN, "path": path, "item": item } );
+		}
+	}
+	
+	
+	
+	
+	
+	/* ---------------------------------- Create Item ---------------------------------- */
+	
+	
+	
+	/**
+	 * Create item by dialog result
+	 */
+	public TreeItem createNewItemByDialogResult(DialogResultEvent result)
+	{
+		string name = result.input;
+		string kind = "";
+		DialogModel model = result.model;
+		
+		if (model instanceof DialogModel)
+		{
+			if (model.action == TreeModel::DIALOG_CREATE_FILE) kind = TreeItem::KIND_FILE;
+			else if (model.action == TreeModel::DIALOG_CREATE_FOLDER) kind = TreeItem::KIND_FOLDER;
+			
+			TreeItem item = this.newItem({
+				"name": name,
+				"kind": kind,
+			});
+			
+			return item;
+		}
+		
+		return null;
+	}
+	
+	
+	
+	/**
+	 * Create item
+	 */
+	public void createDialogItem(DialogResultEvent result)
+	{
+		Collection<int> path = result.model.tag;
+		TreeItem item = this.createNewItemByDialogResult(result);
+		if (item != null)
+		{
+			TreeModel model = this.model;
+			
+			/* Set parent item open */
+			model = TreeModel::setIsOpen(model, path, true);
+			
+			/* Add new item */
+			model = TreeModel::addTreeItem
+			(
+				this.model,
+				path,
+				item
+			);
+			
+			/* Set new model */
+			this.setModel( model );
+			
+			/* Signal Out */
+			this.signalOut( new TreeEvent{ "kind": TreeEvent::ITEM_CREATE, "path": path, "item": item } );
+		}
+	}
+	
+	
+	
+	/* ---------------------------------- Rename Item ---------------------------------- */
+	
+	
+	/**
+	 * Rename item
+	 */
+	public void renameDialogItem(DialogResultEvent result)
+	{
+		Collection<int> path = result.model.tag;
+		TreeItem item = TreeModel::getTreeItem(this.model, path);
+		if (item != null)
+		{
+			TreeItem item_new = item;
+			TreeItem item_old = item;
+			item_new <= name <= result.input;
+			TreeModel model = TreeModel::setTreeItem
+			(
+				this.model,
+				result.model.tag,
+				item_new
+			);
+			this.setModel( model );
+			
+			/* Signal Out */
+			this.signalOut(
+				new TreeEvent
+				{
+					"kind": TreeEvent::ITEM_RENAME,
+					"path": path,
+					"item_new": item_new,
+					"item_old": item_old,
+				}
+			);
+		}
+	}
+	
+	
+	
+	/* ---------------------------------- Delete Item ---------------------------------- */
+	
+	
+	/**
+	 * Remove item
+	 */
+	public void deleteDialogItem(DialogResultEvent result)
+	{
+		Collection<int> path = result.model.tag;
+		TreeItem item = TreeModel::getTreeItem(this.model, path);
+		TreeModel model = TreeModel::deleteTreeItem
+		(
+			this.model,
+			path
+		);
+		this.setModel( model );
+	}
+	
 	
 }

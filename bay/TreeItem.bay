@@ -31,4 +31,64 @@ struct TreeItem extends CoreStruct
 	public Collection<TreeItem> items = null;
 	public bool is_open = false;
 	public bool is_reload = false;
+	
+	
+	
+	/**
+	 * Returns items name
+	 */
+	string getName()
+	{
+		return this.name;
+	}
+	
+	
+	
+	/**
+	 * Returns item
+	 */
+	Collection<TreeItem> getItems()
+	{
+		return this.items;
+	}
+	
+	
+	
+	/**
+	 * Returns item
+	 */
+	TreeItem setItems(Collection<TreeItem> items)
+	{
+		TreeItem model = this;
+		model <= items <= items;
+		return model;
+	}
+	
+	
+	
+	/**
+	 * Returns item
+	 */
+	TreeItem getItem(int key, TreeItem def_val = null)
+	{
+		Collection<TreeItem> items = this.getItems();
+		if (items == null) return def_val;
+		return items.get(key, def_val);
+	}
+	
+	
+	
+	/**
+	 * Set item
+	 */
+	TreeItem setItem(int key, TreeItem item)
+	{
+		TreeItem model = this;
+		Collection<TreeItem> items = this.getItems();
+		items = items.setIm(key, item);
+		model = this.setItems(items);
+		return model;
+	}
+	
+	
 }

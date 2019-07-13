@@ -18,14 +18,11 @@
 
 namespace Core.Components.Tree;
 
-use Runtime.Exceptions.RuntimeException;
-use Runtime.Interfaces.ComponentInterface;
-use Runtime.Interfaces.ContextInterface;
+use Runtime.Interfaces.AssetsInterface;
 use Runtime.Interfaces.ModuleDescriptionInterface;
-use Core.UI.Render.RenderContainer;
 
 
-class ModuleDescription implements ModuleDescriptionInterface, ComponentInterface
+class ModuleDescription implements ModuleDescriptionInterface, AssetsInterface
 {
 
 	
@@ -64,12 +61,11 @@ class ModuleDescription implements ModuleDescriptionInterface, ComponentInterfac
 	 */
 	lambda Collection<string> getModuleFiles() => 
 	[
-		"Core.Components.Tree.Tree",
-		"Core.Components.Tree.TreeItem",
-		"Core.Components.Tree.TreeItemEvent",
-		"Core.Components.Tree.TreeManager",
-		"Core.Components.Tree.TreeModel",
-		"Core.Components.Tree.ModuleDescription",
+		"Core.Components.Tree/Tree",
+		"Core.Components.Tree/TreeEvent",
+		"Core.Components.Tree/TreeItem",
+		"Core.Components.Tree/TreeModel",
+		"Core.Components.Tree/ModuleDescription",
 	];
 	
 	
@@ -78,27 +74,6 @@ class ModuleDescription implements ModuleDescriptionInterface, ComponentInterfac
 	 * Returns enities
 	 */
 	lambda Collection<Dict> entities() => null;
-	
-	
-	
-	/**
-	 * Returns view name
-	 */
-	lambda string componentViewName()  => "Core.Components.Tree.Tree";
-	
-	
-	
-	/**
-	 * Returns manager name
-	 */
-	lambda string componentManagerName() => "Core.Components.Tree.TreeManager";
-	
-	
-	
-	/**
-	 * Returns model name
-	 */
-	lambda string componentModelName()  => "Core.Components.Tree.TreeModel";
 	
 	
 	

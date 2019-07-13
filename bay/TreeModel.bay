@@ -32,10 +32,12 @@ struct TreeModel extends TreeItem
 	const string DIALOG_DELETE_ITEM = "dialog_delete_item";
 	const string DIALOG_RELOAD_ITEM = "dialog_reload_item";
 	
+	public bool is_open = true;
 	public string selected = "";
 	public DialogModel dialog = new DialogModel();
 	public ContextMenuModel contextmenu = new ContextMenuModel();
-	public Collection<TreeItem> items = null;	
+	public Collection<TreeItem> items = null;
+	
 	
 	
 	/**
@@ -86,7 +88,7 @@ struct TreeModel extends TreeItem
 		for (int i=0; i<path.count(); i++)
 		{
 			int key = path.item(i);
-			TreeItem item = item.items.get(key, null);
+			item = item.getItem(key, null);
 			if (item == null) return null;
 			items.push(item);
 		}
@@ -98,10 +100,10 @@ struct TreeModel extends TreeItem
 	/**
 	 * Return name path
 	 */
-	lambda Collection<int> getNamePath(TreeItem model, Collection<int> path, string ch = "/", string attr = "name")
+	lambda Collection<int> getNamePath(TreeItem model, Collection<int> path, string ch = "/")
 	{
 		Collection<TreeItem> items = static::getTreePathItems(model, path);
-		string path_str = rs::join(ch, items.map( lambda string (TreeItem item) use (attr) => item.takeValue(attr) ));
+		string path_str = rs::join(ch, items.map( lambda string (TreeItem item) use (attr) => item.getName() ));
 		if (path_str == "") return ch;
 		return ch ~ path_str;
 	}
@@ -117,7 +119,7 @@ struct TreeModel extends TreeItem
 		for (int i=0; i<path.count(); i++)
 		{
 			int key = path.item(i);
-			item = item.items.get(key, null);
+			item = item.getItem(key, null);
 			if (item == null) return null;
 		}
 		
@@ -133,15 +135,15 @@ struct TreeModel extends TreeItem
 	{
 		if (path.count() == 1)
 		{
-			model <= items <= model.items.setIm(path.get(0), item);
+			model = model.setItem(path.get(0), item);
 			return model;
 		}
 		
 		int key = path.get(0);
-		model <= items <= model.items.setIm(
+		model = model.setItem(
 			key, 
 			static::setTreeItem(
-				model.items.get(key), 
+				model.getItems().get(key), 
 				path.removeFirstIm(), 
 				item
 			)
@@ -158,32 +160,32 @@ struct TreeModel extends TreeItem
 	{
 		if (path.count() == 0)
 		{
-			if (model.items != null)
+			Collection<TreeItem> items = model.getItems();
+			if (items != null)
 			{
-				Collection<TreeItem> items = null;
 				if (add_item)
 				{
-					items = add_item(model.items, item);
+					items = add_item(items, item);
 				}
 				else
 				{
-					items = model.items.pushIm(item);
+					items = items.pushIm(item);
 				}
-				model <= items <= model.items.pushIm(item);
+				model = model.setItems(items);
 			}
 			else
 			{
 				Collection items = [ item ];
-				model <= items <= items.toCollection();
+				model = model.setItems( items.toCollection() );
 			}
 			return model;
 		}
 		
 		int key = path.get(0);
-		model <= items <= model.items.setIm(
+		model = model.setItem(
 			key, 
 			static::addTreeItem(
-				model.items.get(key), 
+				model.getItems().get(key), 
 				path.removeFirstIm(), 
 				item,
 				add_item
@@ -201,15 +203,17 @@ struct TreeModel extends TreeItem
 	{
 		if (path.count() == 1)
 		{
-			model <= items <= model.items.removeIm( path.get(0) );
+			Collection<TreeItem> items = model.getItems();
+			items = items.removeIm( path.get(0) );
+			model = model.setItems(items);
 			return model;
 		}
 		
 		int key = path.get(0);
-		model <= items <= model.items.setIm(
+		model = model.setItem(
 			key, 
 			static::deleteTreeItem(
-				model.items.get(key), 
+				model.getItems().get(key), 
 				path.removeFirstIm()
 			)
 		);

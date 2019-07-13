@@ -22,12 +22,12 @@ use Runtime.CoreEvent;
 use Core.Components.Tree.TreeItem;
 
 
-struct TreeItemEvent extends CoreEvent
+struct TreeEvent extends CoreEvent
 {
-	const string CREATE = "create";
-	const string OPEN = "open";
-	const string RENAME = "rename";
-	const string DELETE = "delete";
+	const string CREATE = "item_create";
+	const string OPEN = "item_open";
+	const string RENAME = "item_rename";
+	const string DELETE = "item_delete";
 	
 	
 	public string kind = "";

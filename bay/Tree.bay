@@ -199,7 +199,7 @@ class Tree extends Component
 			<div @class='tree_item' class={ static::getTreeItemClassName(model, item, path) }>
 				<div @class='tree_item_name' data-path={ path } @annotations={ static::treeItemLabelAnnotations() }>
 					<div @class='tree_icon'>{ static::renderTreeItemIcon(model, item, props) }</div>
-					<div @class='tree_label'>{ item.getName() }</div>
+					<div @class='tree_label'>{ item.getItemName() }</div>
 				</div>
 				<div @class='tree_items'>{ static::renderTreeItems(model, item, path, props) }
 				</div>
@@ -276,7 +276,7 @@ class Tree extends Component
 		if (model.selected == "" or not model.contextmenu.is_active)
 			return "";
 		
-		TreeModel item = TreeModel::getSelectedItem(model);
+		TreeItem item = this.model.getSelectedItem();
 		if (item.kind == TreeModel::KIND_FOLDER)
 		{
 			return
@@ -335,10 +335,10 @@ class Tree extends Component
 	 */
 	public void updateItem(Collection<int> path, Dict data, Collection<TreeItem> items = null)
 	{
-		NavigatorItem item = TreeModel::getTreeItem(this.model, path);
+		NavigatorItem item = this.model.getTreeItem(path);
 		item = item.copy(data);
 		if (items != null) item = item.setItems(items);
-		this.setModel( TreeModel::setTreeItem(this.model, path, item) );
+		this.setModel( this.model.setTreeItem(path, item) );
 	}
 	
 	
@@ -360,9 +360,8 @@ class Tree extends Component
 	 */
 	public void deleteItem(Collection<int> path)
 	{
-		TreeModel model = TreeModel::deleteTreeItem
+		TreeModel model = this.model.deleteTreeItem
 		(
-			this.model,
 			path
 		);
 		this.setModel( model );
@@ -381,8 +380,8 @@ class Tree extends Component
 		
 		/* Select node */
 		Model model = this.model;
-		model = TreeModel::selectItem(model, tree_data_path);
-		model <= contextmenu <= ContextMenuModel::hide(this.model.contextmenu);
+		model = this.model.selectItem(tree_data_path);
+		model <= contextmenu <= this.model.contextmenu.hide();
 		this.setModel(model);
 	}
 	
@@ -458,10 +457,10 @@ class Tree extends Component
 	/**
 	 * Dialog create result
 	 */
-	public void onDialogResult(UIEvent<DialogResultEvent> e)
+	public void onDialogResult(UIEvent<DialogEvent> e)
 	{
-		DialogResultEvent event = e.event;
-		if (event.value == DialogModel::BUTTON_RESULT_OK)
+		DialogEvent event = e.event;
+		if (event.button_result == DialogModel::BUTTON_RESULT_OK)
 		{
 			/* Create file or folder */
 			if (
@@ -502,8 +501,8 @@ class Tree extends Component
 	 */
 	public void showCreateFile(Collection<int> path)
 	{
-		TreeItem item = TreeModel::getTreeItem(this.model, path);
-		string file_path = TreeModel::getNamePath(this.model, path);
+		TreeItem item = this.model.getTreeItem(path);
+		string file_path = this.model.getNamePath(path);
 		
 		if (item.kind == TreeItem::KIND_FOLDER)
 		{
@@ -538,8 +537,8 @@ class Tree extends Component
 	 */
 	public void showCreateFolder(Collection<int> path)
 	{
-		TreeItem item = TreeModel::getTreeItem(this.model, path);
-		string file_path = TreeModel::getNamePath(this.model, path);
+		TreeItem item = this.model.getTreeItem(path);
+		string file_path = this.model.getNamePath(path);
 		
 		if (item.kind == TreeItem::KIND_FOLDER)
 		{
@@ -575,8 +574,8 @@ class Tree extends Component
 	 */
 	public void showRenameItem(Collection<int> path)
 	{
-		TreeItem item = TreeModel::getTreeItem(this.model, path);
-		string file_path = TreeModel::getNamePath(this.model, path);
+		TreeItem item = this.model.getTreeItem(path);
+		string file_path = this.model.getNamePath(path);
 		string mesage = "";
 		
 		if (item == null)
@@ -599,7 +598,7 @@ class Tree extends Component
 				{
 					"action": TreeModel::DIALOG_RENAME_ITEM,
 					"style": DialogModel::STYLE_PROMT,
-					"input": item.getName(),
+					"input": item.getItemName(),
 					"is_modal": true,
 					"title": "",
 					"message": mesage,
@@ -617,8 +616,8 @@ class Tree extends Component
 	 */
 	public void showDeleteItem(Collection<int> path)
 	{
-		TreeItem item = TreeModel::getTreeItem(this.model, path);
-		string file_path = TreeModel::getNamePath(this.model, path);
+		TreeItem item = this.model.getTreeItem(path);
+		string file_path = this.model.getNamePath(path);
 		string mesage = "";
 		
 		if (item == null)
@@ -674,7 +673,7 @@ class Tree extends Component
 	 */
 	void openItem(Collection<int> path)
 	{
-		TreeItem item = TreeModel::getTreeItem(this.model, path);
+		TreeItem item = this.model.getTreeItem(path);
 		
 		if (item.kind == TreeItem::KIND_FOLDER)
 		{
@@ -736,21 +735,21 @@ class Tree extends Component
 		TreeItem item = this.createNewItemByDialogResult(result);
 		if (item != null)
 		{
-			TreeModel model = this.model;
 			
-			/* Set parent item open */
-			model = TreeModel::setIsOpen(model, path, true);
-			
-			/* Add new item */
-			model = TreeModel::addTreeItem
+			this.setModel
 			(
-				this.model,
-				path,
-				item
+				this.model
+				
+				/* Set parent item open */
+				.setIsOpen(path, true)
+				
+				/* Add new item */
+				.addTreeItem
+				(
+					path,
+					item
+				)
 			);
-			
-			/* Set new model */
-			this.setModel( model );
 			
 			/* Signal Out */
 			this.signalOut( new TreeEvent{ "kind": TreeEvent::ITEM_CREATE, "path": path, "item": item } );
@@ -768,19 +767,19 @@ class Tree extends Component
 	public void renameDialogItem(DialogResultEvent result)
 	{
 		Collection<int> path = result.model.tag;
-		TreeItem item = TreeModel::getTreeItem(this.model, path);
+		TreeItem item = this.model.getTreeItem(path);
 		if (item != null)
 		{
 			TreeItem item_new = item;
 			TreeItem item_old = item;
 			item_new <= name <= result.input;
-			TreeModel model = TreeModel::setTreeItem
-			(
-				this.model,
-				result.model.tag,
-				item_new
+			this.setModel(
+				this.model.setTreeItem
+				(
+					result.model.tag,
+					item_new
+				) 
 			);
-			this.setModel( model );
 			
 			/* Signal Out */
 			this.signalOut(
@@ -806,13 +805,7 @@ class Tree extends Component
 	public void deleteDialogItem(DialogResultEvent result)
 	{
 		Collection<int> path = result.model.tag;
-		TreeItem item = TreeModel::getTreeItem(this.model, path);
-		TreeModel model = TreeModel::deleteTreeItem
-		(
-			this.model,
-			path
-		);
-		this.setModel( model );
+		this.setModel( this.model.deleteTreeItem(path) );
 	}
 	
 	

@@ -57,8 +57,9 @@ struct TreeModel extends TreeItem
 	 * @param string path
 	 * @return TreeModel
 	 */
-	lambda TreeModel selectItem(TreeModel model, string path)
+	public TreeModel selectItem(string path)
 	{
+		TreeModel model = this;
 		model <= selected <= path;
 		return model;
 	}
@@ -70,168 +71,13 @@ struct TreeModel extends TreeItem
 	 * @param TreeModel model
 	 * @return TreeItem
 	 */
-	lambda TreeItem getSelectedItem(TreeModel model)
+	public TreeItem getSelectedItem()
 	{
-		Collection<int> path = static::splitPath( model.selected );
-		TreeItem item = static::getTreeItem( model, path );
+		TreeModel model = this;
+		Collection<int> path = self::splitPath( model.selected );
+		TreeItem item = model.getTreeItem( path );
 		return item;
 	}
-	
-	
-	
-	/**
-	 * Returns tree items by path
-	 */
-	lambda Collection<TreeItem> getTreePathItems(TreeItem item, Collection<int> path)
-	{
-		Vector<TreeItem> items = new Vector();
-		for (int i=0; i<path.count(); i++)
-		{
-			int key = path.item(i);
-			item = item.getItem(key, null);
-			if (item == null) return null;
-			items.push(item);
-		}
-		return items.toCollection();
-	}
-	
-	
-	
-	/**
-	 * Return name path
-	 */
-	lambda Collection<int> getNamePath(TreeItem model, Collection<int> path, string ch = "/")
-	{
-		Collection<TreeItem> items = static::getTreePathItems(model, path);
-		string path_str = rs::join(ch, items.map( lambda string (TreeItem item) use (attr) => item.getName() ));
-		if (path_str == "") return ch;
-		return ch ~ path_str;
-	}
-	
-	
-	
-	/**
-	 * Returns tree item by path
-	 */
-	lambda TreeItem getTreeItem(TreeModel model, Collection<int> path)
-	{
-		TreeItem item = model;
-		for (int i=0; i<path.count(); i++)
-		{
-			int key = path.item(i);
-			item = item.getItem(key, null);
-			if (item == null) return null;
-		}
-		
-		return item;
-	}
-	
-	
-	
-	/**
-	 * Set tree item by path
-	 */
-	lambda TreeItem setTreeItem(TreeItem model, Collection<int> path, TreeItem item)
-	{
-		if (path.count() == 1)
-		{
-			model = model.setItem(path.get(0), item);
-			return model;
-		}
-		
-		int key = path.get(0);
-		model = model.setItem(
-			key, 
-			static::setTreeItem(
-				model.getItems().get(key), 
-				path.removeFirstIm(), 
-				item
-			)
-		);
-		return model;
-	}
-	
-	
-	
-	/**
-	 * Add tree item by path
-	 */
-	lambda TreeItem addTreeItem(TreeItem model, Collection<int> path, TreeItem item, callback add_item = null)
-	{
-		if (path.count() == 0)
-		{
-			Collection<TreeItem> items = model.getItems();
-			if (items != null)
-			{
-				if (add_item)
-				{
-					items = add_item(items, item);
-				}
-				else
-				{
-					items = items.pushIm(item);
-				}
-				model = model.setItems(items);
-			}
-			else
-			{
-				Collection items = [ item ];
-				model = model.setItems( items.toCollection() );
-			}
-			return model;
-		}
-		
-		int key = path.get(0);
-		model = model.setItem(
-			key, 
-			static::addTreeItem(
-				model.getItems().get(key), 
-				path.removeFirstIm(), 
-				item,
-				add_item
-			)
-		);
-		return model;
-	}
-	
-	
-	
-	/**
-	 * Delete tree item by path
-	 */
-	lambda TreeItem deleteTreeItem(TreeItem model, Collection<int> path)
-	{
-		if (path.count() == 1)
-		{
-			Collection<TreeItem> items = model.getItems();
-			items = items.removeIm( path.get(0) );
-			model = model.setItems(items);
-			return model;
-		}
-		
-		int key = path.get(0);
-		model = model.setItem(
-			key, 
-			static::deleteTreeItem(
-				model.getItems().get(key), 
-				path.removeFirstIm()
-			)
-		);
-		return model;
-	}
-	
-	
-	
-	/**
-	 * Set is open
-	 */
-	lambda TreeModel setIsOpen(TreeItem model, Collection<int> path, bool flag = true)
-	{
-		TreeItem item = static::getTreeItem(model, path);
-		item <= is_open <= flag;
-		return static::setTreeItem(model, path, item);
-	}
-	
 	
 	
 }

@@ -37,7 +37,7 @@ struct TreeItem extends CoreStruct
 	/**
 	 * Returns items name
 	 */
-	string getName()
+	string getItemName()
 	{
 		return this.name;
 	}
@@ -89,6 +89,169 @@ struct TreeItem extends CoreStruct
 		model = this.setItems(items);
 		return model;
 	}
+	
+	
+	
+	/**
+	 * Returns tree items by path
+	 */
+	public Collection<TreeItem> getTreePathItems(Collection<int> path)
+	{
+		TreeItem item = this;
+		Vector<TreeItem> items = new Vector();
+		for (int i=0; i<path.count(); i++)
+		{
+			int key = path.item(i);
+			item = item.getItem(key, null);
+			if (item == null) return null;
+			items.push(item);
+		}
+		return items.toCollection();
+	}
+	
+	
+	
+	/**
+	 * Return name path
+	 */
+	public Collection<int> getNamePath(Collection<int> path, string ch = "/")
+	{
+		TreeItem model = this;
+		Collection<TreeItem> items = model.getTreePathItems(path);
+		string path_str = rs::join(ch, items.map( lambda string (TreeItem item) use (attr) => item.getItemName() ));
+		if (path_str == "") return ch;
+		return ch ~ path_str;
+	}
+	
+	
+	
+	/**
+	 * Returns tree item by path
+	 */
+	public TreeItem getTreeItem(Collection<int> path)
+	{
+		TreeItem item = this;
+		for (int i=0; i<path.count(); i++)
+		{
+			int key = path.item(i);
+			item = item.getItem(key, null);
+			if (item == null) return null;
+		}
+		
+		return item;
+	}
+	
+	
+	
+	/**
+	 * Set tree item by path
+	 */
+	public TreeItem setTreeItem(Collection<int> path, TreeItem item)
+	{
+		TreeItem model = this;
+		
+		if (path.count() == 1)
+		{
+			model = model.setItem(path.get(0), item);
+			return model;
+		}
+		
+		int key = path.get(0);
+		model = model.setItem(
+			key, 
+			model.getItems().get(key).setTreeItem(
+				path.removeFirstIm(), 
+				item
+			)
+		);
+		return model;
+	}
+	
+	
+	
+	/**
+	 * Add tree item by path
+	 */
+	public TreeItem addTreeItem(Collection<int> path, TreeItem item, callback add_item = null)
+	{
+		TreeItem model = this;
+		
+		if (path.count() == 0)
+		{
+			Collection<TreeItem> items = model.getItems();
+			if (items != null)
+			{
+				if (add_item)
+				{
+					items = add_item(items, item);
+				}
+				else
+				{
+					items = items.pushIm(item);
+				}
+				model = model.setItems(items);
+			}
+			else
+			{
+				Collection items = [ item ];
+				model = model.setItems( items.toCollection() );
+			}
+			return model;
+		}
+		
+		int key = path.get(0);
+		model = model.setItem(
+			key, 
+			model.getItems().get(key).addTreeItem(
+				path.removeFirstIm(), 
+				item,
+				add_item
+			)
+		);
+		
+		return model;
+	}
+	
+	
+	
+	/**
+	 * Delete tree item by path
+	 */
+	public TreeItem deleteTreeItem(Collection<int> path)
+	{
+		TreeItem model = this;
+		
+		if (path.count() == 1)
+		{
+			Collection<TreeItem> items = model.getItems();
+			items = items.removeIm( path.get(0) );
+			model = model.setItems(items);
+			return model;
+		}
+		
+		int key = path.get(0);
+		model = model.setItem(
+			key, 
+			model.getItems().get(key).deleteTreeItem(
+				path.removeFirstIm()
+			)
+		);
+		
+		return model;
+	}
+	
+	
+	
+	/**
+	 * Set is open
+	 */
+	public TreeModel setIsOpen(Collection<int> path, bool flag = true)
+	{
+		TreeItem item = this.getTreeItem(path);
+		item <= is_open <= flag;
+		return this.setTreeItem(path, item);
+	}
+	
 	
 	
 }

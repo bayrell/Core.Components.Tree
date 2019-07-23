@@ -181,7 +181,7 @@ struct TreeItem extends CoreStruct
 			Collection<TreeItem> items = model.getItems();
 			if (items != null)
 			{
-				if (add_item)
+				if (add_item != null)
 				{
 					items = add_item(items, item);
 				}
@@ -200,14 +200,14 @@ struct TreeItem extends CoreStruct
 		}
 		
 		int key = path.get(0);
-		model = model.setItem(
-			key, 
-			model.getItems().get(key).addTreeItem(
-				path.removeFirstIm(), 
-				item,
-				add_item
-			)
+		TreeItem child = model.getItem(key);
+		child = child.addTreeItem
+		(
+			path.removeFirstIm(), 
+			item,
+			add_item
 		);
+		model = model.setItem(key, child);
 		
 		return model;
 	}

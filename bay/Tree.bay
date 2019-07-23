@@ -36,6 +36,7 @@ use Core.UI.Events.MouseEvent.MouseClickEvent;
 use Core.UI.Events.MouseEvent.MouseContextMenuEvent;
 use Core.UI.Events.MouseEvent.MouseDoubleClickEvent;
 use Core.UI.Component;
+use Core.UI.PocketModel;
 use Core.UI.RenderHelper;
 
 
@@ -43,8 +44,8 @@ class Tree extends Component
 {
 
 	public TreeModel model;
-	public Reference ref_contextmenu = null;
-	public Reference ref_dialog = null;
+	public Reference contextmenu = null;
+	public Reference dialog = null;
 	
 	
 	/**
@@ -111,7 +112,7 @@ class Tree extends Component
 	/**
 	 * Component render
 	 */
-	lambda Template render(TreeModel model, UIStruct ui) =>
+	lambda Template render(TreeModel model, UIStruct ui, PocketModel pocket) =>
 		rtl::normalizeUIVector([
 			static::renderTree(model, ui),
 			static::renderContextMenu(model),
@@ -196,7 +197,8 @@ class Tree extends Component
 		if (item == null) return "";
 		
 		return
-			<div @class='tree_item' class={ static::getTreeItemClassName(model, item, path) }>
+			<div @class='tree_item' class={ static::getTreeItemClassName(model, item, path) } 
+				@watch=[ model.selected, item ] >
 				<div @class='tree_item_name' data-path={ path } @annotations={ static::treeItemLabelAnnotations() }>
 					<div @class='tree_icon'>{ static::renderTreeItemIcon(model, item, props) }</div>
 					<div @class='tree_label'>{ item.getItemName() }</div>
@@ -252,8 +254,7 @@ class Tree extends Component
 	 * Render context menu
 	 */
 	lambda Collection<UIStruct> renderContextMenu(Model model) =>
-		<ContextMenu @key="contextmenu" @ref="ref_contextmenu" @bind="contextmenu"
-			@model={ model.contextmenu }
+		<ContextMenu @model={ model.contextmenu } @key="contextmenu" @ref="contextmenu" @bind="contextmenu"
 			@annotations=[
 				new Event{ 
 					"event": classof ContextMenuEvent, 
@@ -304,7 +305,7 @@ class Tree extends Component
 	lambda Collection<UIStruct> renderDialogs(Model model)
 	{
 		return 
-			<Dialog @model={ model.dialog } @bind="dialog" @ref="ref_dialog"
+			<Dialog @model={ model.dialog } @bind="dialog" @ref="dialog"
 				@annotations=[
 					new Event{ 
 						"event": classof DialogResultEvent, 
@@ -395,7 +396,7 @@ class Tree extends Component
 		string tree_data_path = e.vdom.props.get("data-path");
 		
 		/* Show context menu and select item */
-		this.ref_contextmenu.ref.show(e.event.pageX - window.scrollX, e.event.pageY - window.scrollY);
+		this.contextmenu.show(e.event.pageX - window.scrollX, e.event.pageY - window.scrollY);
 		this.selectItem(tree_data_path);
 	}
 	
@@ -424,30 +425,30 @@ class Tree extends Component
 	{
 		/* Hide context menu */
 		this.updateModel({
-			"contextmenu": ContextMenuModel::hide(this.model.contextmenu),
+			"contextmenu": this.model.contextmenu.hide(),
 		});
 		
 		string tree_data_path = this.model.selected;
 		Collection<int> path = TreeModel::splitPath(tree_data_path);
 		if (e.event.tag == 'action_create_file')
 		{
-			static::showCreateFile(path);
+			this.showCreateFile(path);
 		}
 		else if (e.event.tag == 'action_create_folder')
 		{
-			static::showCreateFolder(path);
+			this.showCreateFolder(path);
 		}
 		else if (e.event.tag == 'action_rename_item')
 		{
-			static::showRenameItem(path);
+			this.showRenameItem(path);
 		}
 		else if (e.event.tag == 'action_delete_item')
 		{
-			static::showDeleteItem(path);
+			this.showDeleteItem(path);
 		}
 		else if (e.event.tag == 'action_reload_item')
 		{
-			static::reloadItem(path);
+			this.reloadItem(path);
 		}
 		
 	}
@@ -468,25 +469,25 @@ class Tree extends Component
 				event.model.action == TreeModel::DIALOG_CREATE_FOLDER
 			)
 			{
-				static::createDialogItem(event);
+				this.createDialogItem(event);
 			}
 			
 			/* Rename node */
 			if (event.model.action == TreeModel::DIALOG_RENAME_ITEM)
 			{
-				static::renameDialogItem(event);
+				this.renameDialogItem(event);
 			}
 			
 			/* Remove node */
 			if (event.model.action == TreeModel::DIALOG_DELETE_ITEM)
 			{
-				static::deleteDialogItem(event);
+				this.deleteDialogItem(event);
 			}
 			
 			/* Reload node */
 			if (event.model.action == TreeModel::DIALOG_RELOAD_ITEM)
 			{
-				/*static::reloadItem(event);*/
+				/*this.reloadItem(event);*/
 			}
 		}
 	}
@@ -506,7 +507,7 @@ class Tree extends Component
 		
 		if (item.kind == TreeItem::KIND_FOLDER)
 		{
-			this.ref_dialog.ref.show
+			this.dialog.show
 			({
 				"action": TreeModel::DIALOG_CREATE_FILE,
 				"style": DialogModel::STYLE_PROMT,
@@ -518,7 +519,7 @@ class Tree extends Component
 		}
 		else
 		{
-			this.ref_dialog.ref.show
+			this.dialog.show
 			({
 				"style": DialogModel::STYLE_ALERT,
 				"is_modal": true,
@@ -542,7 +543,7 @@ class Tree extends Component
 		
 		if (item.kind == TreeItem::KIND_FOLDER)
 		{
-			this.ref_dialog.ref.show(
+			this.dialog.show(
 				{
 					"action": TreeModel::DIALOG_CREATE_FOLDER,
 					"style": DialogModel::STYLE_PROMT,
@@ -555,7 +556,7 @@ class Tree extends Component
 		}
 		else
 		{
-			this.ref_dialog.ref.show(
+			this.dialog.show(
 				{
 					"style": DialogModel::STYLE_ALERT,
 					"is_modal": true,
@@ -594,7 +595,7 @@ class Tree extends Component
 		
 		if (mesage)
 		{
-			this.ref_dialog.ref.show(
+			this.dialog.show(
 				{
 					"action": TreeModel::DIALOG_RENAME_ITEM,
 					"style": DialogModel::STYLE_PROMT,
@@ -636,7 +637,7 @@ class Tree extends Component
 		
 		if (mesage)
 		{
-			this.ref_dialog.ref.show(
+			this.dialog.show(
 				{
 					"action": TreeModel::DIALOG_DELETE_ITEM,
 					"style": DialogModel::STYLE_CONFIRM,
